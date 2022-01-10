@@ -53,6 +53,9 @@ export default async function handler(
   res: NextApiResponse
 ) {
   let db: Db;
+  console.log(
+    `Handling request to /api/polls with method ${req.method} and body ${req.body}`
+  );
   switch (req.method) {
     case "GET":
       // Get polls
@@ -91,16 +94,20 @@ export default async function handler(
     case "POST":
       // create new vote
       // Locked to "staff" only
-
+      console.log("Getting session...");
       const session = await getSession({ req });
       if (!session) {
         res.status(401).json({ statusCode: 401, message: "Unauthorized" });
         return;
       }
+      console.log(`Got session ${session}`);
+      console.log(`Checking if user is staff...`);
       if (!process.env.STAFF_USER_IDS?.includes(session.user.id)) {
         res.status(403).json({ statusCode: 403, message: "Access Forbidden" });
         return;
       }
+      console.log(`User is staff!`);
+      console.log(`Validating body...`);
 
       if (!validateSchema(createVoteBody, req.body)) {
         res
@@ -109,6 +116,8 @@ export default async function handler(
 
         return;
       }
+      console.log(`Body is valid!`);
+      console.log(`Formatting body`);
       const body = req.body as CreateVoteBodyType;
       if (body.options.length < 1 || body.options.length > 25) {
         res.status(400).json({
@@ -139,9 +148,13 @@ export default async function handler(
           count: 0,
         };
       });
+      console.log(`Formatted body`);
+      console.log(`Connecting to database...`);
       db = await connect();
-
+      console.log(`Connected to database`);
+      console.log(`Inserting vote...`);
       const resp = await db.collection("polls").insertOne(doc);
+      console.log(`Inserted vote`);
       res.send({ id: resp.insertedId });
       break;
     default:
